@@ -65,3 +65,41 @@ def test_real_native_pdf_extraction(tmp_path):
     result = convert_document(source, pdf_pipeline="native", ocr=False)
     assert "Native PDF passage" in result.value
     assert result.provenance[0]["pages"]
+
+
+def test_real_cli_and_http_extraction(tmp_path):
+    pytest.importorskip("docling")
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+    from docling_carve.http import create_app
+    import subprocess
+    import sys
+    import json
+
+    source = tmp_path / "upload.html"
+    source.write_text("<html><body><p>Uploaded document passage.</p></body></html>")
+    cli = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "docling_carve",
+            "convert",
+            str(source),
+            "--extract",
+            "--no-ocr",
+            "--format",
+            "report-json",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert cli.returncode == 0, cli.stderr
+    assert "Uploaded document passage" in json.loads(cli.stdout)["value"]
+    client = TestClient(create_app(token="extract-token"))
+    response = client.post(
+        "/v1/extract?filename=upload.html&ocr=false",
+        content=source.read_bytes(),
+        headers={"Authorization": "Bearer extract-token"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["value"] == json.loads(cli.stdout)["value"]

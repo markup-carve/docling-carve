@@ -164,6 +164,13 @@ def test_mcp_protocol_round_trip_uses_the_same_report():
                 assert result.structured_content == export_json(example().export_to_dict()).to_dict(
                     include_assets=True
                 )
+                diagnostic_doc = example()
+                diagnostic_doc.add_text(label=DocItemLabel.PAGE_HEADER, text="review")
+                strict = await session.call_tool(
+                    "docling_to_carve",
+                    {"document": diagnostic_doc.export_to_dict(), "strict": True},
+                )
+                assert strict.is_error and strict.structured_content["total_diagnostics"] == 1
                 refused = await session.call_tool("docling_extract", {"path": "/etc/passwd"})
                 assert refused.is_error
 

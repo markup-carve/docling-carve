@@ -2,6 +2,10 @@
 
 from pathlib import Path
 from typing import Any
+import json
+from mcp.types import CallToolResult, TextContent
+from mcp.server.mcpserver.exceptions import ToolError
+from .result import DoclingExportError
 from mcp.server.mcpserver import MCPServer
 from .capabilities import capabilities
 from .schema import report_schema
@@ -14,14 +18,31 @@ def create_server(*, root: str | Path | None = None) -> MCPServer:
         raise ValueError("MCP root must be a directory")
     server = MCPServer("docling-carve")
 
+    def converted(call) -> CallToolResult:
+        try:
+            report = call().to_dict(include_assets=True)
+            refused = False
+        except DoclingExportError as error:
+            report = error.result.to_dict(include_assets=True)
+            refused = True
+        except (ValueError, OSError, ImportError) as error:
+            raise ToolError(str(error)) from error
+        return CallToolResult(
+            content=[TextContent(type="text", text=json.dumps(report, ensure_ascii=False))],
+            structured_content=report,
+            is_error=refused,
+        )
+
     @server.tool()
     def docling_to_carve(
         document: dict[str, Any], strict: bool = False, max_diagnostics: int = 1000
-    ) -> dict[str, Any]:
+    ) -> CallToolResult:
         """Convert a Docling JSON document, returning source, reports, and embedded assets."""
-        return export_json(
-            document, strict=strict, max_diagnostics=max_diagnostics, max_input_bytes=16_000_000
-        ).to_dict(include_assets=True)
+        return converted(
+            lambda: export_json(
+                document, strict=strict, max_diagnostics=max_diagnostics, max_input_bytes=16_000_000
+            )
+        )
 
     @server.tool()
     def docling_carve_capabilities() -> dict[str, Any]:
@@ -40,17 +61,23 @@ def create_server(*, root: str | Path | None = None) -> MCPServer:
     @server.tool()
     def docling_extract(
         path: str, strict: bool = False, pdf_pipeline: str = "standard", ocr: bool = True
-    ) -> dict[str, Any]:
+    ) -> CallToolResult:
         """Extract a local document contained in the root passed when starting this server."""
         if allowed_root is None:
-            raise ValueError("Start docling-carve mcp with --root to enable file extraction")
+            raise ToolError("Start docling-carve mcp with --root to enable file extraction")
         source = (allowed_root / path).resolve(strict=True)
         if not source.is_relative_to(allowed_root) or not source.is_file():
-            raise ValueError("Extraction path escapes the configured root or is not a file")
+            raise ToolError("Extraction path escapes the configured root or is not a file")
         from .extraction import convert_document
 
-        return convert_document(
-            source, strict=strict, pdf_pipeline=pdf_pipeline, ocr=ocr, max_input_bytes=16_000_000
-        ).to_dict(include_assets=True)
+        return converted(
+            lambda: convert_document(
+                source,
+                strict=strict,
+                pdf_pipeline=pdf_pipeline,
+                ocr=ocr,
+                max_input_bytes=16_000_000,
+            )
+        )
 
     return server

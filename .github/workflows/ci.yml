@@ -43,7 +43,7 @@ jobs:
       - run: python -m pip install maturin pytest
       - run: python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
       - run: maturin build --release --locked --out dist
-      - run: python -m pip install $(echo dist/*.whl)'[extract]'
+      - run: python -m pip install $(echo dist/*.whl)'[extract,http]'
       - run: pytest -q tests/test_extraction.py
   container:
     name: Container HTTP

@@ -199,6 +199,10 @@ def main(argv: list[str] | None = None) -> int:
             ]
             if args.report:
                 _writable(args.report, args.force)
+                if args.output is not None and args.report.resolve() == args.output.resolve():
+                    raise ValueError("Report and source output must be different files")
+                if inputs[0] != "-" and args.report.resolve() == Path(inputs[0]).resolve():
+                    raise ValueError("Report must not replace its input")
             if args.output:
                 _writable(args.output, args.force)
                 if inputs[0] != "-" and args.output.resolve() == Path(inputs[0]).resolve():

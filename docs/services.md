@@ -51,7 +51,7 @@ Install `mcp` and configure a stdio client:
 }
 ```
 
-Tools are `docling_to_carve`, `docling_carve_capabilities`, and `docling_extract`. The schema resource is `docling-carve://schema/report-v1`. JSON conversion has a 16000000-byte limit. Extraction requires a configured root and refuses paths, including resolved symlinks, outside it. Without `--root`, JSON conversion remains available.
+Tools are `docling_to_carve`, `docling_carve_capabilities`, and `docling_extract`. Strict refusal returns `is_error` with the report in structured content and text. The schema resource is `docling-carve://schema/report-v1`. JSON conversion has a 16000000-byte limit. Extraction requires a configured root and refuses paths, including resolved symlinks, outside it. Without `--root`, JSON conversion remains available.
 
 ## Container
 
