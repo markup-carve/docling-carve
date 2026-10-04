@@ -112,7 +112,9 @@ def export_docling(
         )
     )
     total_table_cells = sum(
-        item.data.num_rows * item.data.num_cols for item, _ in items if isinstance(item, TableItem)
+        max(0, item.data.num_rows) * max(0, item.data.num_cols)
+        for item, _ in items
+        if isinstance(item, TableItem)
     )
     if total_table_cells > max_total_table_cells:
         raise ValueError("Document exceeds max_total_table_cells")
@@ -649,7 +651,9 @@ def export_docling(
         asset_prefix=asset_prefix,
         total_diagnostics=total_diagnostics,
         max_diagnostics=max_diagnostics,
-        document=document.export_to_dict(),
+        document=document.model_dump(
+            mode="json", by_alias=True, exclude_none=True, round_trip=True
+        ),
         versions={
             "carve": ENGINE_VERSION,
             "docling-carve": __version__,

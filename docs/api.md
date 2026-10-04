@@ -20,7 +20,7 @@
 
 JSON loading also accepts `asset_root`, `max_input_bytes` (64000000). A local image reference must resolve inside `asset_root`. Remote images are rejected. Embedded images are checked before Docling decodes them. Document ownership depth is limited to 128 levels.
 
-`result.value` contains source, `result.ast` the converted AST, `result.provenance` references to Docling items and available page geometry, and `result.assets` PNG bytes indexed by content hash. Provenance paths address the converted AST; they are not byte offsets in the emitted source. `result.document` is the original Docling snapshot. JSON input preserves its original fields before validated local images are hydrated.
+`result.value` contains source, `result.ast` the converted AST, `result.provenance` references to Docling items and available page geometry, and `result.assets` PNG bytes indexed by content hash. Provenance paths address the converted AST; they are not byte offsets in the emitted source. `result.document` is a Docling snapshot. Object input omits computed fields such as regenerated table grids; stored fields remain available. JSON input preserves its original fields before validated local images are hydrated.
 
 `result.to_dict(include_assets=True)` embeds asset bytes as base64. `include_document=True` includes the source snapshot. The default report includes asset metadata and the converted AST. Reports follow [schema version 1](../python/docling_carve/schemas/report-v1.json).
 
