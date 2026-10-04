@@ -3,6 +3,8 @@
 from pathlib import Path
 import re
 import sys
+import subprocess
+import tempfile
 
 
 def version(path):
@@ -14,5 +16,15 @@ assert version("Cargo.toml") == distribution
 assert f'=={distribution}"' in Path("Dockerfile").read_text()
 if sys.argv[1].startswith("v"):
     assert sys.argv[1] == "v" + distribution
+    with tempfile.TemporaryDirectory() as directory:
+        subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("release_notes.py")),
+                sys.argv[1],
+                str(Path(directory) / "notes.md"),
+            ],
+            check=True,
+        )
 assert 'panic = "abort"' not in Path("Cargo.toml").read_text()
 print("Version and unwind guards passed")

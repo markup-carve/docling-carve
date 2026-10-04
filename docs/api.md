@@ -50,3 +50,7 @@ result = convert_document("report.pdf", pdf_pipeline="native", ocr=False)
 Install the `extract` extra. The standard PDF pipeline runs Docling's OCR/layout pipeline and may download models on first use. The native PDF pipeline uses the document's text layer and does not OCR scanned text. Office and HTML inputs use Docling's corresponding backends. Conversion is serialized within a process because converters cache pipeline state.
 
 `allow_url=True` permits explicit HTTP(S) downloads in the Python API and CLI. HTTP uploads and MCP extraction do not accept remote URLs. `max_pages` defaults to 1000; `max_input_bytes` defaults to 64000000. A custom `converter` may be passed for configured Docling pipelines.
+
+## CLI limits
+
+`convert` and `batch` expose `--max-input-bytes`, `--max-items`, `--max-table-cells`, `--max-total-table-cells`, `--max-image-pixels`, `--max-asset-bytes`, `--max-total-asset-bytes`, and `--max-diagnostics`. Defaults match the API table above. Extraction also accepts `--max-pages`. `serve --max-input-bytes` sets the streamed request ceiling; other server ceilings can be configured through the Python app factory.

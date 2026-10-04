@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from PIL import Image
 from ._native import render_ast_json, ENGINE_VERSION, __version__
 
 
@@ -111,6 +112,13 @@ def export_docling(
             root=root, with_groups=True, traverse_pictures=False, included_content_layers=layers
         )
     )
+    for item, _ in items:
+        if isinstance(item, TableItem):
+            rows, cols = item.data.num_rows, item.data.num_cols
+            if rows < 1 or cols < 1 or rows * cols > max_table_cells:
+                raise ValueError(
+                    item.self_ref + ": table dimensions must be positive and within max_table_cells"
+                )
     total_table_cells = sum(
         max(0, item.data.num_rows) * max(0, item.data.num_cols)
         for item, _ in items
@@ -195,6 +203,8 @@ def export_docling(
         return nodes
 
     def table(item: Any, path: str) -> Optional[Dict[str, Any]]:
+        provenance_start = len(provenance)
+        table_diagnostic_start = len(diagnostics)
         data = item.data
         nr, nc = data.num_rows, data.num_cols
         if nr < 1 or nc < 1 or nr * nc > max_table_cells:
@@ -335,7 +345,7 @@ def export_docling(
                         path if retained or caption else None,
                     )
             remap = {old: new for new, old in enumerate(retained)}
-            for entry in provenance + diagnostics:
+            for entry in provenance[provenance_start:] + diagnostics[table_diagnostic_start:]:
                 entry_path = entry.get("path")
                 if entry_path and entry_path.startswith(path + "/rows/"):
                     suffix = entry_path[len(path + "/rows/") :]
@@ -490,6 +500,8 @@ def export_docling(
         elif isinstance(item, PictureItem):
             try:
                 image = item.get_image(document)
+            except Image.DecompressionBombError as error:
+                raise ValueError("Image exceeds safe decoding dimensions") from error
             except (OSError, ValueError, KeyError, IndexError):
                 image = None
             if image is None:
@@ -554,10 +566,17 @@ def export_docling(
                         "Heading line breaks became spaces in native source.",
                         path,
                     )
+                if not heading_text.strip():
+                    diagnostic(
+                        item,
+                        "empty-heading-omitted",
+                        "An empty heading has no source content.",
+                        path,
+                    )
                 block = {
                     "type": "heading",
                     "level": min(level, 6),
-                    "children": text_nodes(item, heading_text),
+                    "children": text_nodes(item, heading_text) if heading_text.strip() else [],
                 }
             elif label == "code":
                 block = {

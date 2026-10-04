@@ -204,7 +204,7 @@ def test_http_client_limits_cannot_raise_server_ceilings():
         },
     )
     assert response.status_code == 400
-    assert "max_total_table_cells" in response.text
+    assert "max_table_cells" in response.text
     bounded = TestClient(create_app(limits={"max_items": 1}))
     assert (
         bounded.post(
@@ -246,6 +246,7 @@ def test_mcp_configured_root_refuses_escape_symlinks_and_missing_files(tmp_path)
     outside = tmp_path / "outside.txt"
     outside.write_text("private")
     (root / "escape.txt").symlink_to(outside)
+    (root / "loop.txt").symlink_to("loop.txt")
 
     async def run():
         params = StdioServerParameters(
@@ -254,7 +255,7 @@ def test_mcp_configured_root_refuses_escape_symlinks_and_missing_files(tmp_path)
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
-                for path in ("../outside.txt", "escape.txt", "missing.txt"):
+                for path in ("../outside.txt", "escape.txt", "missing.txt", "loop.txt"):
                     result = await session.call_tool("docling_extract", {"path": path})
                     assert result.is_error
                     assert "escapes the configured root" in result.content[0].text

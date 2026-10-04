@@ -67,7 +67,7 @@ def create_server(*, root: str | Path | None = None) -> MCPServer:
             raise ToolError("Start docling-carve mcp with --root to enable file extraction")
         try:
             source = (allowed_root / path).resolve(strict=True)
-        except OSError as error:
+        except (OSError, RuntimeError) as error:
             raise ToolError(
                 "Extraction path escapes the configured root or is not a file"
             ) from error
