@@ -95,7 +95,7 @@ def test_many_sparse_tables_are_bounded_before_grid_allocation():
     with pytest.raises(ValueError, match="max_total_table_cells"):
         export_docling(doc, max_total_table_cells=100000)
     with pytest.raises(ValueError, match="max_total_table_cells"):
-        export_json(doc.export_to_dict(), max_total_table_cells=100000)
+        export_json(doc.model_dump(mode="json", round_trip=True), max_total_table_cells=100000)
 
 
 def test_bbox_and_omitted_row_reports_validate_against_schema():
@@ -146,3 +146,17 @@ def test_heading_normalization_and_normalized_asset_prefix(tmp_path):
         export_docling(doc, strict=True)
     target = result.write_bundle(tmp_path / "bundle")
     result.write_bundle(target, overwrite=True)
+
+
+def test_excluded_sparse_tables_do_not_regenerate_snapshot_grids():
+    from docling_core.types.doc import TableData, ContentLayer
+
+    doc = DoclingDocument(name="excluded grids")
+    doc.add_table(
+        data=TableData(num_rows=1000000, num_cols=1000000, table_cells=[]),
+        content_layer=ContentLayer.FURNITURE,
+    )
+    result = export_docling(doc)
+    assert not result.ast["children"]
+    assert result.document["tables"][0]["data"]["num_rows"] == 1000000
+    assert "grid" not in result.document["tables"][0]["data"]
