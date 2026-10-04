@@ -29,6 +29,7 @@ def _common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--max-input-bytes", type=_positive, default=64_000_000)
     parser.add_argument("--max-items", type=_positive, default=100000)
     parser.add_argument("--max-table-cells", type=_positive, default=100000)
+    parser.add_argument("--max-total-table-cells", type=_positive, default=1000000)
     parser.add_argument("--max-diagnostics", type=int, default=1000)
     parser.add_argument(
         "--layer",
@@ -104,6 +105,7 @@ def _result(
         "strict": args.strict,
         "max_items": args.max_items,
         "max_table_cells": args.max_table_cells,
+        "max_total_table_cells": args.max_total_table_cells,
         "max_diagnostics": args.max_diagnostics,
         "included_content_layers": args.layers,
         "asset_prefix": asset_prefix,

@@ -84,3 +84,15 @@ def test_unknown_associated_reference_is_refused():
     table.captions.append(RefItem(cref="#/texts/999"))
     with pytest.raises(ValueError, match="associated"):
         export_docling(doc)
+
+
+def test_many_sparse_tables_are_bounded_before_grid_allocation():
+    from docling_core.types.doc import TableData
+
+    doc = DoclingDocument(name="sparse")
+    for _ in range(20):
+        doc.add_table(data=TableData(num_rows=100, num_cols=100, table_cells=[]))
+    with pytest.raises(ValueError, match="max_total_table_cells"):
+        export_docling(doc, max_total_table_cells=100000)
+    with pytest.raises(ValueError, match="max_total_table_cells"):
+        export_json(doc.export_to_dict(), max_total_table_cells=100000)

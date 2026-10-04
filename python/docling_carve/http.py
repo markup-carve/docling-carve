@@ -21,6 +21,7 @@ _ALLOWED_OPTIONS = {
     "strict",
     "max_items",
     "max_table_cells",
+    "max_total_table_cells",
     "max_diagnostics",
     "max_asset_bytes",
     "max_total_asset_bytes",

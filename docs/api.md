@@ -12,6 +12,7 @@
 | `asset_dir` | `None` | Write PNG assets after successful export |
 | `max_items` | 100000 | Bound document ownership nodes |
 | `max_table_cells` | 100000 | Bound each table's rectangular grid |
+| `max_total_table_cells` | 1000000 | Bound all selected table grids before allocation |
 | `max_diagnostics` | 1000 | Bound retained entries; total count remains available |
 | `max_asset_bytes` | 16000000 | Bound each generated PNG |
 | `max_total_asset_bytes` | 64000000 | Bound all generated assets |

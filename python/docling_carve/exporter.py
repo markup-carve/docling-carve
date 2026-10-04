@@ -24,6 +24,7 @@ def export_docling(
     asset_prefix: str = "assets",
     strict: bool = False,
     max_table_cells: int = 100000,
+    max_total_table_cells: int = 1000000,
     included_content_layers: Optional[Any] = None,
     max_items: int = 100000,
     max_diagnostics: int = 1000,
@@ -79,6 +80,7 @@ def export_docling(
         raise ValueError("asset_prefix must be a relative URL directory")
     validate_document(document, max_items=max_items)
     for label, limit in (
+        ("max_total_table_cells", max_total_table_cells),
         ("max_diagnostics", max_diagnostics),
         ("max_asset_bytes", max_asset_bytes),
         ("max_total_asset_bytes", max_total_asset_bytes),
@@ -104,6 +106,11 @@ def export_docling(
             root=root, with_groups=True, traverse_pictures=False, included_content_layers=layers
         )
     )
+    total_table_cells = sum(
+        item.data.num_rows * item.data.num_cols for item, _ in items if isinstance(item, TableItem)
+    )
+    if total_table_cells > max_total_table_cells:
+        raise ValueError("Document exceeds max_total_table_cells")
     captions = {
         ref.cref for item, _ in items if isinstance(item, FloatingItem) for ref in item.captions
     }
@@ -309,8 +316,9 @@ def export_docling(
             )
         ]
         if len(retained) != len(rows):
+            retained_set = set(retained)
             for index in range(len(rows)):
-                if index not in retained:
+                if index not in retained_set:
                     diagnostic(
                         item,
                         "blank-table-row-omitted",
