@@ -1,0 +1,62 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: dtolnay/rust-toolchain@stable
+      - run: python -m pip install 'maturin>=1.9,<2' pytest httpx jsonschema ruff
+      - run: maturin build --release --locked --out dist
+      - run: python -m pip install $(echo dist/*.whl)'[http,mcp]'
+      - run: python scripts/wheel_gate.py dist/*.whl
+      - run: pytest -q
+      - run: ruff check python tests scripts examples
+      - run: ruff format --check python tests scripts examples
+      - run: cargo fmt --check
+  extraction:
+    name: Real extraction
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+      - run: python -m pip install maturin pytest
+      - run: python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+      - run: maturin build --release --locked --out dist
+      - run: python -m pip install $(echo dist/*.whl)'[extract]'
+      - run: pytest -q tests/test_extraction.py
+  container:
+    name: Container HTTP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t docling-carve:test .
+      - run: |
+          docker run -d --name adapter -p 127.0.0.1:8080:8080 -e DOCLING_CARVE_TOKEN=test-token docling-carve:test
+          trap 'docker logs adapter; docker rm -f adapter' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/health; then break; fi
+            sleep 1
+          done
+          curl --fail --silent -H 'Authorization: Bearer test-token' http://127.0.0.1:8080/v1/capabilities
+          curl --fail --silent -H 'Authorization: Bearer test-token' http://127.0.0.1:8080/v1/schema

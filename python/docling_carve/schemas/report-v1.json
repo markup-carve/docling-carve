@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/markup-carve/docling-carve/blob/main/python/docling_carve/schemas/report-v1.json",
+  "title": "Docling Carve export report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "assessment",
+    "complete",
+    "value",
+    "source",
+    "versions",
+    "diagnostics",
+    "total_diagnostics",
+    "max_diagnostics",
+    "truncated",
+    "provenance",
+    "checked",
+    "unchecked",
+    "assets"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1"
+    },
+    "assessment": {
+      "const": "docling-carve-v1"
+    },
+    "complete": {
+      "const": false
+    },
+    "value": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object"
+    },
+    "versions": {
+      "type": "object",
+      "required": [
+        "carve",
+        "docling-carve",
+        "docling-core"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "ref",
+          "path",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_diagnostics": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "max_diagnostics": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "provenance": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "ref",
+          "pages"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "array"
+          },
+          "depth": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "checked": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unchecked": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "media_type",
+          "size",
+          "sha256",
+          "path"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "media_type": {
+            "const": "image/png"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "path": {
+            "type": "string"
+          },
+          "base64": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ast": {
+      "type": "object",
+      "required": [
+        "type",
+        "children"
+      ],
+      "properties": {
+        "type": {
+          "const": "document"
+        },
+        "children": {
+          "type": "array"
+        }
+      }
+    },
+    "document": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,14 @@
+[package]
+name = "docling-carve-native"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/markup-carve/docling-carve"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.27", features = ["abi3-py310", "extension-module"] }
+carve_rs = { package = "carve-lang", version = "=0.1.7" }

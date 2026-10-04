@@ -1,0 +1,56 @@
+"""Optional MCP adapter for JSON conversion and contained file extraction."""
+
+from pathlib import Path
+from typing import Any
+from mcp.server.mcpserver import MCPServer
+from .capabilities import capabilities
+from .schema import report_schema
+from .json_api import export_json
+
+
+def create_server(*, root: str | Path | None = None) -> MCPServer:
+    allowed_root = Path(root).resolve(strict=True) if root is not None else None
+    if allowed_root is not None and not allowed_root.is_dir():
+        raise ValueError("MCP root must be a directory")
+    server = MCPServer("docling-carve")
+
+    @server.tool()
+    def docling_to_carve(
+        document: dict[str, Any], strict: bool = False, max_diagnostics: int = 1000
+    ) -> dict[str, Any]:
+        """Convert a Docling JSON document, returning source, reports, and embedded assets."""
+        return export_json(
+            document, strict=strict, max_diagnostics=max_diagnostics, max_input_bytes=16_000_000
+        ).to_dict(include_assets=True)
+
+    @server.tool()
+    def docling_carve_capabilities() -> dict[str, Any]:
+        """Return adapter versions, output types, and installed interfaces."""
+        result = capabilities()
+        result["filesystem_extraction_enabled"] = allowed_root is not None
+        return result
+
+    @server.resource("docling-carve://schema/report-v1")
+    def schema() -> str:
+        """Return the JSON schema for export reports."""
+        import json
+
+        return json.dumps(report_schema())
+
+    @server.tool()
+    def docling_extract(
+        path: str, strict: bool = False, pdf_pipeline: str = "standard", ocr: bool = True
+    ) -> dict[str, Any]:
+        """Extract a local document contained in the root passed when starting this server."""
+        if allowed_root is None:
+            raise ValueError("Start docling-carve mcp with --root to enable file extraction")
+        source = (allowed_root / path).resolve(strict=True)
+        if not source.is_relative_to(allowed_root) or not source.is_file():
+            raise ValueError("Extraction path escapes the configured root or is not a file")
+        from .extraction import convert_document
+
+        return convert_document(
+            source, strict=strict, pdf_pipeline=pdf_pipeline, ocr=ocr, max_input_bytes=16_000_000
+        ).to_dict(include_assets=True)
+
+    return server
