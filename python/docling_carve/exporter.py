@@ -29,6 +29,7 @@ def export_docling(
     max_items: int = 100000,
     max_diagnostics: int = 1000,
     max_asset_bytes: int = 16000000,
+    max_image_pixels: int = 40000000,
     max_total_asset_bytes: int = 64000000,
     root: Optional[Any] = None,
 ) -> DoclingExport:
@@ -78,11 +79,15 @@ def export_docling(
         or any(p == ".." for p in asset_prefix.replace("\\", "/").split("/"))
     ):
         raise ValueError("asset_prefix must be a relative URL directory")
+    asset_prefix = Path(asset_prefix).as_posix() if asset_prefix else ""
+    if asset_prefix == ".":
+        asset_prefix = ""
     validate_document(document, max_items=max_items)
     for label, limit in (
         ("max_total_table_cells", max_total_table_cells),
         ("max_diagnostics", max_diagnostics),
         ("max_asset_bytes", max_asset_bytes),
+        ("max_image_pixels", max_image_pixels),
         ("max_total_asset_bytes", max_total_asset_bytes),
     ):
         if (
@@ -282,9 +287,11 @@ def export_docling(
                     "path": cell_path,
                     "ref": item.self_ref,
                     "bbox": cell.bbox.model_dump(mode="json"),
+                    "pages": [],
                 }
                 if len(item.prov) == 1:
                     entry["page_no"] = item.prov[0].page_no
+                    entry["pages"] = [{"page_no": item.prov[0].page_no, "bbox": entry["bbox"]}]
                 else:
                     diagnostic(
                         item,
@@ -492,6 +499,8 @@ def export_docling(
                 )
                 block = {"type": "paragraph", "children": caption_nodes(item)}
             else:
+                if image.width * image.height > max_image_pixels:
+                    raise ValueError("Image exceeds max_image_pixels")
                 buffer = BytesIO()
                 if image.mode not in ("1", "L", "LA", "P", "RGB", "RGBA", "I", "I;16"):
                     image = image.convert("RGB")
@@ -534,7 +543,20 @@ def export_docling(
                         "Heading levels above six become level six.",
                         path,
                     )
-                block = {"type": "heading", "level": min(level, 6), "children": text_nodes(item)}
+                heading_text = item.text
+                if "\n" in heading_text or "\r" in heading_text:
+                    heading_text = re.sub(r"\r\n|[\r\n]", " ", heading_text)
+                    diagnostic(
+                        item,
+                        "heading-linebreaks-normalized",
+                        "Heading line breaks became spaces in native source.",
+                        path,
+                    )
+                block = {
+                    "type": "heading",
+                    "level": min(level, 6),
+                    "children": text_nodes(item, heading_text),
+                }
             elif label == "code":
                 block = {
                     "type": "code_block",

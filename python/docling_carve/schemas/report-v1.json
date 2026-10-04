@@ -97,7 +97,10 @@
         ],
         "properties": {
           "path": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "ref": {
             "type": "string"

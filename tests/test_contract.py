@@ -96,3 +96,53 @@ def test_many_sparse_tables_are_bounded_before_grid_allocation():
         export_docling(doc, max_total_table_cells=100000)
     with pytest.raises(ValueError, match="max_total_table_cells"):
         export_json(doc.export_to_dict(), max_total_table_cells=100000)
+
+
+def test_bbox_and_omitted_row_reports_validate_against_schema():
+    from docling_core.types.doc import TableData, TableCell, BoundingBox
+    from docling_carve.schema import report_schema
+    from jsonschema import validate
+
+    doc = DoclingDocument(name="bbox")
+    doc.add_table(
+        data=TableData(
+            num_rows=2,
+            num_cols=1,
+            table_cells=[
+                TableCell(
+                    text="",
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=1,
+                    start_col_offset_idx=0,
+                    end_col_offset_idx=1,
+                    bbox=BoundingBox(l=0, t=10, r=10, b=0),
+                ),
+                TableCell(
+                    text="retained",
+                    start_row_offset_idx=1,
+                    end_row_offset_idx=2,
+                    start_col_offset_idx=0,
+                    end_col_offset_idx=1,
+                ),
+            ],
+        )
+    )
+    report = export_docling(doc).to_dict()
+    assert any(entry["path"] is None for entry in report["provenance"])
+    validate(report, report_schema())
+
+
+def test_heading_normalization_and_normalized_asset_prefix(tmp_path):
+    from docling_core.types.doc import ImageRef
+    from PIL import Image
+
+    doc = DoclingDocument(name="normalization")
+    doc.add_heading("One\nTwo", level=2)
+    doc.add_picture(image=ImageRef.from_pil(Image.new("RGB", (1, 1)), dpi=72))
+    result = export_docling(doc, asset_prefix="./a//b")
+    assert result.asset_prefix == "a/b"
+    assert "heading-linebreaks-normalized" in {entry["code"] for entry in result.diagnostics}
+    with pytest.raises(DoclingExportError):
+        export_docling(doc, strict=True)
+    target = result.write_bundle(tmp_path / "bundle")
+    result.write_bundle(target, overwrite=True)

@@ -68,6 +68,7 @@ def convert_document(
         raise ValueError("strict must be boolean")
     try:
         from docling.datamodel.base_models import DocumentStream
+        from docling.exceptions import ConversionError
     except ImportError as error:
         raise ImportError("Install docling-carve[extract] to use document extraction") from error
     parsed = urlsplit(str(source))
@@ -88,12 +89,15 @@ def convert_document(
     asset_dir = options.pop("asset_dir", None)
     with _converter_lock:
         pipeline = converter if converter is not None else _converter(pdf_pipeline, ocr)
-        converted = pipeline.convert(
-            DocumentStream(name=name, stream=BytesIO(payload)),
-            raises_on_error=True,
-            max_num_pages=max_pages,
-            max_file_size=max_input_bytes,
-        )
+        try:
+            converted = pipeline.convert(
+                DocumentStream(name=name, stream=BytesIO(payload)),
+                raises_on_error=True,
+                max_num_pages=max_pages,
+                max_file_size=max_input_bytes,
+            )
+        except ConversionError as error:
+            raise ValueError("Docling extraction failed: " + str(error)) from error
     status = getattr(converted.status, "value", str(converted.status))
     if status not in ("success", "partial_success"):
         raise ValueError("Docling extraction failed: " + status)

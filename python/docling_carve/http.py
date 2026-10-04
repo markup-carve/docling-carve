@@ -22,6 +22,7 @@ _ALLOWED_OPTIONS = {
     "max_items",
     "max_table_cells",
     "max_total_table_cells",
+    "max_image_pixels",
     "max_diagnostics",
     "max_asset_bytes",
     "max_total_asset_bytes",
@@ -30,13 +31,41 @@ _ALLOWED_OPTIONS = {
 }
 
 
-def create_app(*, max_input_bytes: int = 16_000_000, token: str | None = None) -> FastAPI:
+_DEFAULT_LIMITS = {
+    "max_items": 100000,
+    "max_table_cells": 100000,
+    "max_total_table_cells": 1000000,
+    "max_image_pixels": 40000000,
+    "max_diagnostics": 1000,
+    "max_asset_bytes": 16000000,
+    "max_total_asset_bytes": 64000000,
+}
+
+
+def create_app(
+    *,
+    max_input_bytes: int = 16_000_000,
+    token: str | None = None,
+    limits: dict[str, int] | None = None,
+) -> FastAPI:
     if (
         isinstance(max_input_bytes, bool)
         or not isinstance(max_input_bytes, int)
         or max_input_bytes < 1
     ):
         raise ValueError("max_input_bytes must be positive")
+    ceilings = dict(_DEFAULT_LIMITS)
+    if limits is not None:
+        if not isinstance(limits, dict) or set(limits) - set(ceilings):
+            raise ValueError("Unknown server resource limits")
+        ceilings.update(limits)
+    for name, limit in ceilings.items():
+        if (
+            isinstance(limit, bool)
+            or not isinstance(limit, int)
+            or limit < (0 if name == "max_diagnostics" else 1)
+        ):
+            raise ValueError("Invalid server resource limit: " + name)
     secret = token if token is not None else os.environ.get("DOCLING_CARVE_TOKEN")
     app = FastAPI(title="docling-carve", version=__version__)
 
@@ -105,6 +134,11 @@ def create_app(*, max_input_bytes: int = 16_000_000, token: str | None = None) -
                 raise ValueError("Unsupported conversion options")
             if "strict" in options and not isinstance(options["strict"], bool):
                 raise ValueError("strict must be boolean")
+            for name, ceiling in ceilings.items():
+                requested = options.get(name, ceiling)
+                if isinstance(requested, bool) or not isinstance(requested, int):
+                    raise ValueError(name + " must be an integer")
+                options[name] = min(requested, ceiling)
             result = await run_in_threadpool(
                 export_json, envelope["document"], max_input_bytes=max_input_bytes, **options
             )
@@ -144,6 +178,7 @@ def create_app(*, max_input_bytes: int = 16_000_000, token: str | None = None) -
                     ocr=ocr,
                     max_pages=max_pages,
                     max_input_bytes=max_input_bytes,
+                    **ceilings,
                 )
             return result.to_dict(include_assets=True)
         except ImportError as error:

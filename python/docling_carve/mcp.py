@@ -1,7 +1,7 @@
 """Optional MCP adapter for JSON conversion and contained file extraction."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Annotated
 import json
 from mcp.types import CallToolResult, TextContent
 from mcp.server.mcpserver.exceptions import ToolError
@@ -36,7 +36,7 @@ def create_server(*, root: str | Path | None = None) -> MCPServer:
     @server.tool()
     def docling_to_carve(
         document: dict[str, Any], strict: bool = False, max_diagnostics: int = 1000
-    ) -> CallToolResult:
+    ) -> Annotated[CallToolResult, dict[str, Any]]:
         """Convert a Docling JSON document, returning source, reports, and embedded assets."""
         return converted(
             lambda: export_json(
@@ -61,11 +61,16 @@ def create_server(*, root: str | Path | None = None) -> MCPServer:
     @server.tool()
     def docling_extract(
         path: str, strict: bool = False, pdf_pipeline: str = "standard", ocr: bool = True
-    ) -> CallToolResult:
+    ) -> Annotated[CallToolResult, dict[str, Any]]:
         """Extract a local document contained in the root passed when starting this server."""
         if allowed_root is None:
             raise ToolError("Start docling-carve mcp with --root to enable file extraction")
-        source = (allowed_root / path).resolve(strict=True)
+        try:
+            source = (allowed_root / path).resolve(strict=True)
+        except OSError as error:
+            raise ToolError(
+                "Extraction path escapes the configured root or is not a file"
+            ) from error
         if not source.is_relative_to(allowed_root) or not source.is_file():
             raise ToolError("Extraction path escapes the configured root or is not a file")
         from .extraction import convert_document

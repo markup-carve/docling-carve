@@ -14,10 +14,11 @@
 | `max_table_cells` | 100000 | Bound each table's rectangular grid |
 | `max_total_table_cells` | 1000000 | Bound all selected table grids before allocation |
 | `max_diagnostics` | 1000 | Bound retained entries; total count remains available |
+| `max_image_pixels` | 40000000 | Bound image dimensions |
 | `max_asset_bytes` | 16000000 | Bound each generated PNG |
 | `max_total_asset_bytes` | 64000000 | Bound all generated assets |
 
-JSON loading also accepts `asset_root`, `max_input_bytes` (64000000), and `max_image_pixels` (40000000). A local image reference must resolve inside `asset_root`. Remote images are rejected. Embedded images are checked before Docling decodes them. Document ownership depth is limited to 128 levels.
+JSON loading also accepts `asset_root`, `max_input_bytes` (64000000). A local image reference must resolve inside `asset_root`. Remote images are rejected. Embedded images are checked before Docling decodes them. Document ownership depth is limited to 128 levels.
 
 `result.value` contains source, `result.ast` the converted AST, `result.provenance` references to Docling items and available page geometry, and `result.assets` PNG bytes indexed by content hash. Provenance paths address the converted AST; they are not byte offsets in the emitted source. `result.document` is the original Docling snapshot. JSON input preserves its original fields before validated local images are hydrated.
 

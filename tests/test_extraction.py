@@ -92,6 +92,7 @@ def test_real_cli_and_http_extraction(tmp_path):
         ],
         capture_output=True,
         text=True,
+        timeout=120,
     )
     assert cli.returncode == 0, cli.stderr
     assert "Uploaded document passage" in json.loads(cli.stdout)["value"]
@@ -103,3 +104,15 @@ def test_real_cli_and_http_extraction(tmp_path):
     )
     assert response.status_code == 200, response.text
     assert response.json()["value"] == json.loads(cli.stdout)["value"]
+
+
+def test_unsupported_upload_is_a_client_error(tmp_path):
+    pytest.importorskip("docling")
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+    from docling_carve.http import create_app
+
+    response = TestClient(create_app()).post(
+        "/v1/extract?filename=unknown.xyz", content=b"unsupported content"
+    )
+    assert response.status_code == 400, response.text

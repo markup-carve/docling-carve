@@ -23,6 +23,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - run: python -m pip install 'maturin>=1.9,<2' pytest httpx jsonschema ruff
       - run: maturin build --release --locked --out dist
       - run: python -m pip install $(echo dist/*.whl)'[http,mcp]'
@@ -40,7 +42,9 @@ jobs:
         with:
           python-version: '3.12'
       - uses: dtolnay/rust-toolchain@stable
-      - run: python -m pip install maturin pytest
+        with:
+          components: rustfmt
+      - run: python -m pip install maturin pytest httpx
       - run: python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
       - run: maturin build --release --locked --out dist
       - run: python -m pip install $(echo dist/*.whl)'[extract,http]'

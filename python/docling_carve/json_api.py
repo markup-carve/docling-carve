@@ -18,6 +18,16 @@ from .result import DoclingExport, DoclingExportError
 DEFAULT_MAX_INPUT_BYTES = 64_000_000
 
 
+def _check_image(raw: bytes, max_image_pixels: int) -> str:
+    try:
+        with Image.open(BytesIO(raw)) as img:
+            if img.width * img.height > max_image_pixels:
+                raise ValueError("Image exceeds max_image_pixels")
+            return (img.format or "png").lower()
+    except Image.DecompressionBombError as error:
+        raise ValueError("Image exceeds safe decoding dimensions") from error
+
+
 def load_document(
     payload: str | bytes | dict[str, Any],
     *,
@@ -76,9 +86,7 @@ def load_document(
                         raise ValueError("Invalid embedded image encoding") from error
                     if len(raw) > max_asset_bytes:
                         raise ValueError("Embedded image exceeds max_asset_bytes")
-                    with Image.open(BytesIO(raw)) as img:
-                        if img.width * img.height > max_image_pixels:
-                            raise ValueError("Image exceeds max_image_pixels")
+                    _check_image(raw, max_image_pixels)
                 elif parsed.scheme == "file" and root is not None:
                     if parsed.netloc not in ("", "localhost"):
                         raise ValueError("Network file image references are not allowed")
@@ -87,13 +95,14 @@ def load_document(
                         raise ValueError("Image path escapes asset_root")
                     if path.stat().st_size > max_asset_bytes:
                         raise ValueError("Image file exceeds max_asset_bytes")
-                    with Image.open(path) as img:
-                        if img.width * img.height > max_image_pixels:
-                            raise ValueError("Image exceeds max_image_pixels")
-                    raw = path.read_bytes()
+                    with path.open("rb") as stream:
+                        raw = stream.read(max_asset_bytes + 1)
+                    if len(raw) > max_asset_bytes:
+                        raise ValueError("Image file exceeds max_asset_bytes")
+                    image_format = _check_image(raw, max_image_pixels)
                     image["uri"] = (
                         "data:image/"
-                        + (img.format or "png").lower()
+                        + image_format
                         + ";base64,"
                         + base64.b64encode(raw).decode("ascii")
                     )
@@ -124,7 +133,7 @@ def export_json(
             max_asset_bytes=options.get("max_asset_bytes", 16_000_000),
         )
         try:
-            result = export_docling(document, **options)
+            result = export_docling(document, max_image_pixels=max_image_pixels, **options)
         except DoclingExportError as error:
             error.result.document = (
                 json.loads(json.dumps(payload))

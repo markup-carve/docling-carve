@@ -31,6 +31,9 @@ def _common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--max-table-cells", type=_positive, default=100000)
     parser.add_argument("--max-total-table-cells", type=_positive, default=1000000)
     parser.add_argument("--max-diagnostics", type=int, default=1000)
+    parser.add_argument("--max-image-pixels", type=_positive, default=40000000)
+    parser.add_argument("--max-asset-bytes", type=_positive, default=16000000)
+    parser.add_argument("--max-total-asset-bytes", type=_positive, default=64000000)
     parser.add_argument(
         "--layer",
         action="append",
@@ -107,6 +110,9 @@ def _result(
         "max_table_cells": args.max_table_cells,
         "max_total_table_cells": args.max_total_table_cells,
         "max_diagnostics": args.max_diagnostics,
+        "max_image_pixels": args.max_image_pixels,
+        "max_asset_bytes": args.max_asset_bytes,
+        "max_total_asset_bytes": args.max_total_asset_bytes,
         "included_content_layers": args.layers,
         "asset_prefix": asset_prefix,
     }

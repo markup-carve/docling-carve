@@ -2,7 +2,7 @@
 
 Install the `http` extra and run `docling-carve serve`. The default bind address is `127.0.0.1`. Set `DOCLING_CARVE_TOKEN` before exposing the service to other clients. `/health` is public; conversion, extraction, capabilities, and schema routes require the configured token.
 
-`POST /v1/convert` accepts `{"document": <Docling JSON>, "options": {...}}`. The response follows the report schema and includes base64 image assets. Options match the exporter except filesystem paths are unavailable. Unknown request fields are refused.
+`POST /v1/convert` accepts `{"document": <Docling JSON>, "options": {...}}`. The response follows the report schema and includes base64 image assets. Options match the exporter except filesystem paths are unavailable. Unknown request fields are refused. Clients may lower resource limits; server ceilings prevent them from raising the defaults. Operators can set ceilings with `create_app(limits={...})`.
 
 ```javascript
 const response = await fetch('http://127.0.0.1:8080/v1/convert', {

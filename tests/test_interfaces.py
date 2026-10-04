@@ -184,3 +184,81 @@ def test_bundle_overwrite_does_not_delete_unmanaged_files(tmp_path):
     with pytest.raises(ValueError, match="outside"):
         result.write_bundle(target, overwrite=True)
     assert (target / "personal.txt").read_text() == "preserve"
+
+
+def test_http_client_limits_cannot_raise_server_ceilings():
+    pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+    from docling_carve.http import create_app
+    from docling_core.types.doc import TableData
+
+    doc = example()
+    doc.add_table(data=TableData(num_rows=1000000, num_cols=1000000, table_cells=[]))
+    response = TestClient(create_app()).post(
+        "/v1/convert",
+        json={
+            "document": doc.export_to_dict(),
+            "options": {"max_table_cells": 10**12, "max_total_table_cells": 10**12},
+        },
+    )
+    assert response.status_code == 400
+    assert "max_total_table_cells" in response.text
+    bounded = TestClient(create_app(limits={"max_items": 1}))
+    assert (
+        bounded.post(
+            "/v1/convert",
+            json={"document": example().export_to_dict(), "options": {"max_items": 1000000}},
+        ).status_code
+        == 400
+    )
+
+
+def test_json_decompression_bomb_is_a_validation_error(monkeypatch):
+    doc = example()
+    doc.add_picture(image=ImageRef.from_pil(Image.new("RGB", (3, 2)), dpi=72))
+    payload = doc.export_to_dict()
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 1)
+    with pytest.raises(ValueError, match="safe decoding"):
+        export_json(payload)
+
+
+def test_cli_report_collision_preserves_input_and_output(tmp_path):
+    source = tmp_path / "input.json"
+    source.write_text(json.dumps(example().export_to_dict()))
+    original = source.read_bytes()
+    assert cli("convert", source, "--report", source, "--force").returncode == 1
+    assert source.read_bytes() == original
+    output = tmp_path / "output.crv"
+    result = cli("convert", source, "--output", output, "--report", output, "--force")
+    assert result.returncode == 1 and "different files" in result.stderr
+    assert not output.exists()
+
+
+def test_mcp_configured_root_refuses_escape_symlinks_and_missing_files(tmp_path):
+    pytest.importorskip("mcp")
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    root = tmp_path / "root"
+    root.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("private")
+    (root / "escape.txt").symlink_to(outside)
+
+    async def run():
+        params = StdioServerParameters(
+            command=sys.executable, args=["-m", "docling_carve", "mcp", "--root", str(root)]
+        )
+        async with stdio_client(params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                for path in ("../outside.txt", "escape.txt", "missing.txt"):
+                    result = await session.call_tool("docling_extract", {"path": path})
+                    assert result.is_error
+                    assert "escapes the configured root" in result.content[0].text
+                tools = await session.list_tools()
+                assert next(
+                    tool for tool in tools.tools if tool.name == "docling_to_carve"
+                ).output_schema
+
+    asyncio.run(run())
