@@ -8,12 +8,14 @@ import tempfile
 
 
 def version(path):
-    return re.search(r'^version\s*=\s*"([^"]+)"', Path(path).read_text(), re.MULTILINE)[1]
+    return re.search(
+        r'^version\s*=\s*"([^"]+)"', Path(path).read_text(encoding="utf-8"), re.MULTILINE
+    )[1]
 
 
 distribution = version("pyproject.toml")
 assert version("Cargo.toml") == distribution
-assert f'=={distribution}"' in Path("Dockerfile").read_text()
+assert f'=={distribution}"' in Path("Dockerfile").read_text(encoding="utf-8")
 if sys.argv[1].startswith("v"):
     assert sys.argv[1] == "v" + distribution
     with tempfile.TemporaryDirectory() as directory:
@@ -26,5 +28,5 @@ if sys.argv[1].startswith("v"):
             ],
             check=True,
         )
-assert 'panic = "abort"' not in Path("Cargo.toml").read_text()
+assert 'panic = "abort"' not in Path("Cargo.toml").read_text(encoding="utf-8")
 print("Version and unwind guards passed")

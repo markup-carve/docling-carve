@@ -121,7 +121,7 @@ jobs:
           if draft=$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft); then
             gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
             if [ "$draft" = true ]; then
-              gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --notes-file release-notes.md
+              gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME" --draft=false --notes-file release-notes.md
             fi
           else
             gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "$GITHUB_REF_NAME" --notes-file release-notes.md
