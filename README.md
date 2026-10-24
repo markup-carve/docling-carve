@@ -6,7 +6,7 @@ The package owns its native wrapper over `carve-lang` 0.1.11. It does not requir
 
 ## Installation
 
-The first release is being prepared. Until wheels are published, build from this repository with Rust and Python installed:
+The first release, `0.1.0`, is being prepared. Until wheels are published, build from this repository with Rust and Python installed:
 
 ```sh
 python -m venv .venv
