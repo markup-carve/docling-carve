@@ -195,7 +195,7 @@ def test_http_client_limits_cannot_raise_server_ceilings():
     doc = example()
     doc.add_table(data=TableData(num_rows=1, num_cols=1, table_cells=[]))
     payload = doc.export_to_dict()
-    payload["tables"][0]["data"].update(num_rows=1000000, num_cols=1000000)
+    payload["tables"][0]["data"].update(num_rows=1000, num_cols=101)
     response = TestClient(create_app()).post(
         "/v1/convert",
         json={
