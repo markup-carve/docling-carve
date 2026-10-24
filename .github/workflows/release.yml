@@ -151,4 +151,4 @@ jobs:
           fi
 env:
   RELEASE_VERSION: ${{ inputs.version }}
-  RELEASE_TAG: ${{ inputs.version != '' && inputs.version || github.ref_name }}
+  RELEASE_TAG: ${{ inputs.version != '' && inputs.version || github.event_name == 'push' && github.ref_name || '' }}
