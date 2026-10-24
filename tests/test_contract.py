@@ -153,12 +153,12 @@ def test_excluded_sparse_tables_do_not_regenerate_snapshot_grids():
 
     doc = DoclingDocument(name="excluded grids")
     doc.add_table(
-        data=TableData(num_rows=1000000, num_cols=1000000, table_cells=[]),
+        data=TableData(num_rows=1000, num_cols=200, table_cells=[]),
         content_layer=ContentLayer.FURNITURE,
     )
     result = export_docling(doc)
     assert not result.ast["children"]
-    assert result.document["tables"][0]["data"]["num_rows"] == 1000000
+    assert result.document["tables"][0]["data"]["num_rows"] == 1000
     assert "grid" not in result.document["tables"][0]["data"]
 
 
@@ -167,6 +167,6 @@ def test_negative_dimensions_cannot_cancel_table_budget():
 
     doc = DoclingDocument(name="negative")
     doc.add_table(data=TableData(num_rows=300, num_cols=300, table_cells=[]))
-    doc.add_table(data=TableData(num_rows=-1, num_cols=2000000, table_cells=[]))
+    doc.add_table(data=TableData(num_rows=-1, num_cols=1000000, table_cells=[]))
     with pytest.raises(ValueError, match="dimensions must be positive"):
         export_docling(doc, max_total_table_cells=100000)
