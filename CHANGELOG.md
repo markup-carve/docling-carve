@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 - 2026-10-24
 
 - Export Docling documents and JSON to Carve using the native Carve writer.
 - Preserve nested lists, table spans, captions, formatting, image assets, and available provenance.
