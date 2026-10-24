@@ -11,7 +11,7 @@ from docling_core.types.doc import DoclingDocument, DocItemLabel
 
 assert "site-packages" in str(Path(docling_carve.__file__).resolve())
 assert docling_carve.__version__ == version("docling-carve")
-assert docling_carve.ENGINE_VERSION == "0.1.11"
+assert docling_carve.ENGINE_VERSION == "0.1.12"
 doc = DoclingDocument(name="wheel")
 doc.add_heading("Installed wheel", level=2)
 doc.add_text(label=DocItemLabel.PARAGRAPH, text="Contract check.")

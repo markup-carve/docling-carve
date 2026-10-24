@@ -4,6 +4,10 @@
 
 Docling documents can be exported to Carve through a native writer, CLI, HTTP endpoint, or MCP interface. Conversion reports losses and can produce review bundles.
 
+### Fixes
+
+- Native Carve parsing follows the 0.1.12 table span, wrapped attribute, and continuation marker rulings.
+
 ### Improvements
 
 - Convert Docling documents and JSON to Carve while preserving nested lists, table spans, captions, formatting, image assets, and available provenance (#1).

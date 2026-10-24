@@ -1,6 +1,6 @@
 # Mapping and compatibility
 
-The adapter uses Docling Core 2.99 or newer within major version 2 and the Carve 0.1.11 native writer. Optional extraction uses Docling 2.133 or newer within major version 2. MCP uses the version 2 SDK (`MCPServer`). CI checks installed wheels and real extraction separately.
+The adapter uses Docling Core 2.99 or newer within major version 2 and the Carve 0.1.12 native writer. Optional extraction uses Docling 2.133 or newer within major version 2. MCP uses the version 2 SDK (`MCPServer`). CI checks installed wheels and real extraction separately.
 
 | Docling content | Carve output | Review conditions |
 | --- | --- | --- |
