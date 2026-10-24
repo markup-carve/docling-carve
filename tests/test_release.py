@@ -28,7 +28,9 @@ def test_release_notes_select_matching_released_section(tmp_path):
     assert result.returncode != 0 and "must be released" in result.stderr
     result = subprocess.run(
         [sys.executable, str(script), "v0.1.0", str(output), "--changelog", str(changelog)],
-        capture_output=True, text=True, timeout=10,
+        capture_output=True,
+        text=True,
+        timeout=10,
     )
     assert result.returncode != 0 and "Expected a version tag" in result.stderr
 
