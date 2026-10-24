@@ -1,0 +1,5 @@
+# Bare release tags
+
+The release workflow adds `v` to a dispatch version, checks for `v` on pushed tags, and passes the result to scripts that expect that prefix. This disagrees with the repository's chosen tag form, `0.1.0`.
+
+Use the distribution version itself as the release tag throughout the workflow, validation scripts, tests, and release instructions. Keep the existing approval and publication gates. This is one tag-format change across all release paths, so it applies to later versions as well as `0.1.0`.

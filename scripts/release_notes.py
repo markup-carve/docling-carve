@@ -9,9 +9,9 @@ parser.add_argument("tag")
 parser.add_argument("output", type=Path)
 parser.add_argument("--changelog", type=Path, default=Path("CHANGELOG.md"))
 args = parser.parse_args()
-if not re.fullmatch(r"v\d+\.\d+\.\d+(?:[a-zA-Z0-9.+-]*)", args.tag):
+if not re.fullmatch(r"\d+\.\d+\.\d+(?:[a-zA-Z0-9.+-]*)", args.tag):
     parser.error("Expected a version tag")
-version = args.tag[1:]
+version = args.tag
 sections = re.split(r"(?m)^## ", args.changelog.read_text(encoding="utf-8"))
 for section in sections[1:]:
     heading, _, body = section.partition("\n")

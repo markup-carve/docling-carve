@@ -81,7 +81,7 @@ jobs:
           path: dist/*.tar.gz
   publish:
     name: Publish to PyPI
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name ==
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/v')) || (github.event_name ==
       'workflow_dispatch' && inputs.version != '')
     needs: [wheels, sdist]
     runs-on: ubuntu-latest
@@ -116,7 +116,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
   github-release:
     name: GitHub release
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name ==
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/v')) || (github.event_name ==
       'workflow_dispatch' && inputs.version != '')
     needs: publish
     runs-on: ubuntu-latest
@@ -151,4 +151,4 @@ jobs:
           fi
 env:
   RELEASE_VERSION: ${{ inputs.version }}
-  RELEASE_TAG: ${{ inputs.version != '' && format('v{0}', inputs.version) || github.ref_name }}
+  RELEASE_TAG: ${{ inputs.version != '' && inputs.version || github.ref_name }}

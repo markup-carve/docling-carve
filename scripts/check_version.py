@@ -16,8 +16,8 @@ def version(path):
 distribution = version("pyproject.toml")
 assert version("Cargo.toml") == distribution
 assert f'=={distribution}"' in Path("Dockerfile").read_text(encoding="utf-8")
-if sys.argv[1].startswith("v"):
-    assert sys.argv[1] == "v" + distribution
+if sys.argv[1]:
+    assert sys.argv[1] == distribution
     with tempfile.TemporaryDirectory() as directory:
         subprocess.run(
             [
