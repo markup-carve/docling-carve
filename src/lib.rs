@@ -24,7 +24,7 @@ fn to_carve(source: &str) -> String {
 
 #[pymodule]
 fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("ENGINE_VERSION", "0.1.12")?;
+    m.add("ENGINE_VERSION", "0.1.13")?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(render_ast_json, m)?)?;
     m.add_function(wrap_pyfunction!(parse_json, m)?)?;
