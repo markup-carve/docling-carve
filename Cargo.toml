@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.27", features = ["abi3-py310", "extension-module"] }
-carve_rs = { package = "carve-lang", version = "=0.1.12" }
+carve_rs = { package = "carve-lang", version = "=0.1.13" }
