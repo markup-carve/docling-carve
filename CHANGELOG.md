@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.1] - 2026-10-25
+
+Docling exports now preserve more table and text detail with the Carve 0.1.13 native writer.
+
+### Improvements
+
+- Empty aligned table headers keep their delimiter row, and literal backslashes retain their intended spelling (#16).
+
+**Full Changelog**: https://github.com/markup-carve/docling-carve/compare/0.1.0...0.1.1
+
 ## [0.1.0] - 2026-10-24
 
 Docling documents can be exported to Carve through a native writer, CLI, HTTP endpoint, or MCP interface. Conversion reports losses and can produce review bundles.

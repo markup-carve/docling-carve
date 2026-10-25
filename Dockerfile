@@ -10,7 +10,7 @@ RUN /opt/build/bin/maturin build --release --locked --out /wheels
 FROM python:3.12-slim-bookworm
 ARG EXTRAS=http,mcp
 COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir /wheels/*.whl && pip install --no-cache-dir "docling-carve[${EXTRAS}]==0.1.0" && rm -rf /wheels
+RUN pip install --no-cache-dir /wheels/*.whl && pip install --no-cache-dir "docling-carve[${EXTRAS}]==0.1.1" && rm -rf /wheels
 RUN useradd --create-home --uid 10001 app
 USER app
 WORKDIR /home/app
