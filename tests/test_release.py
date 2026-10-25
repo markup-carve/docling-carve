@@ -38,7 +38,7 @@ def test_release_notes_select_matching_released_section(tmp_path):
 def test_check_version_accepts_bare_tag_and_rejects_prefix():
     root = Path(__file__).resolve().parents[1]
     script = root / "scripts/check_version.py"
-    for tag, expected in [("0.1.0", 0), ("v0.1.0", 1)]:
+    for tag, expected in [("0.1.1", 0), ("v0.1.1", 1)]:
         result = subprocess.run(
             [sys.executable, str(script), tag], cwd=root, capture_output=True, text=True, timeout=10
         )
