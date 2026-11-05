@@ -155,7 +155,10 @@ def export_docling(
 
     def text_nodes(item: Any, text: Optional[str] = None) -> List[Dict[str, Any]]:
         value = item.text if text is None else text
-        normalized = re.sub(r"(?:(?:\r\n|[\r\n])[ \t]*){2,}", " ", value)
+        # Carve cannot spell whitespace that touches a soft break; the writer would emit
+        # it and fmt would drop it.
+        value = re.sub(r"[ \t]*\n[ \t]*", "\n", re.sub(r"\r\n?", "\n", value))
+        normalized = re.sub(r"\n{2,}", " ", value)
         if normalized != value:
             diagnostic(
                 item,
@@ -185,6 +188,14 @@ def export_docling(
         if link is not None:
             nodes = [{"type": "link", "href": str(link), "children": nodes}]
         return nodes
+
+    def visible(nodes: List[Dict[str, Any]]) -> bool:
+        return any(
+            visible(node["children"])
+            if "children" in node
+            else node["type"] != "text" or bool(node["value"].strip(" \t\n"))
+            for node in nodes
+        )
 
     def caption_nodes(item: Any) -> List[Dict[str, Any]]:
         nodes: List[Dict[str, Any]] = []
@@ -613,10 +624,17 @@ def export_docling(
                 "unsupported-item",
                 "Unsupported item %s; inspect its source reference." % type(item).__name__,
             )
+        if block is not None and block.get("type") == "paragraph":
+            children = block["children"]
+            if children and children[0]["type"] == "text":
+                # A paragraph line cannot start with whitespace in Carve.
+                children[0]["value"] = children[0]["value"].lstrip(" \t\n")
+                if not children[0]["value"]:
+                    children.pop(0)
         if (
             block is not None
             and block.get("type") in ("paragraph", "heading")
-            and not block.get("children")
+            and not visible(block.get("children", []))
         ):
             block = None
         if block is None:
