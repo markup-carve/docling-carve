@@ -193,7 +193,7 @@ def export_docling(
         return any(
             visible(node["children"])
             if "children" in node
-            else node["type"] != "text" or bool(node["value"].strip())
+            else node["type"] != "text" or bool(node["value"].strip(" \t\n"))
             for node in nodes
         )
 

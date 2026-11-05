@@ -273,6 +273,7 @@ def test_blank_lines_in_a_text_item_require_review_and_do_not_split_its_ast():
         ("first\n   *second*", "first\n\\*second*\n"),
         (" ::: note", "\\::: note\n"),
         ("\t:: term", "\\:: term\n"),
+        ("\u00a0", "\u00a0\n"),
     ],
 )
 def test_single_line_breaks_stay_soft_breaks_in_canonical_source(text, expected):
