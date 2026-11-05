@@ -263,6 +263,45 @@ def test_blank_lines_in_a_text_item_require_review_and_do_not_split_its_ast():
     assert len(carve.parse(result.value)["children"]) == 1
 
 
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("first\r\nsecond", "first\nsecond\n"),
+        ("first\rsecond", "first\nsecond\n"),
+        ("first \nsecond", "first\nsecond\n"),
+        ("first\t\r\n\tsecond", "first\nsecond\n"),
+        ("first\n   *second*", "first\n\\*second*\n"),
+        (" ::: note", "\\::: note\n"),
+        ("\t:: term", "\\:: term\n"),
+    ],
+)
+def test_single_line_breaks_stay_soft_breaks_in_canonical_source(text, expected):
+    doc = DoclingDocument(name="breaks")
+    doc.add_text(label=DocItemLabel.TEXT, text=text)
+    result = export_docling(doc, strict=True)
+    assert result.value == expected
+    assert carve.to_carve(result.value) == result.value
+
+
+def test_whitespace_only_text_leaves_no_block_or_provenance_behind():
+    from docling_core.types.doc import Formatting
+
+    doc = DoclingDocument(name="blank")
+    doc.add_text(label=DocItemLabel.TEXT, text=" \r\n\t")
+    doc.add_text(label=DocItemLabel.TEXT, text=" ", formatting=Formatting(bold=True))
+    doc.add_text(label=DocItemLabel.TEXT, text="Kept")
+    group = doc.add_inline_group()
+    doc.add_text(label=DocItemLabel.TEXT, text="a", parent=group)
+    doc.add_text(label=DocItemLabel.TEXT, text=" ", parent=group)
+    doc.add_text(label=DocItemLabel.TEXT, text="b", parent=group)
+    result = export_docling(doc, strict=True)
+    assert result.value == "Kept\n\na b\n"
+    assert len(result.ast["children"]) == len(carve.parse(result.value)["children"]) == 2
+    paths = {entry["ref"]: entry["path"] for entry in result.provenance}
+    assert paths["#/texts/2"] == "/children/0"
+    assert "#/texts/0" not in paths and "#/texts/1" not in paths
+
+
 def test_empty_merged_cell_retains_geometry_with_a_review_placeholder():
     doc = DoclingDocument(name="empty merge")
     doc.add_table(data=TableData(num_rows=2, num_cols=1, table_cells=[cell("", 0, 2, 0, 1)]))
