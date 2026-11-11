@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.2] - 2026-11-11
+
+Docling exports are written by the Carve 0.1.14 native writer, and whitespace Carve cannot spell no longer breaks the output.
+
+### Fixes
+
+- CRLF line breaks, spaces around breaks, leading paragraph whitespace and whitespace-only paragraphs are normalized before writing, so the output matches `ast.json` and the provenance paths (#18).
+
+### Improvements
+
+- The native writer uses carve-lang 0.1.14. A fence run after a soft break is now escaped, and an empty list item is written as `- {empty}` (#19).
+
+**Full Changelog**: https://github.com/markup-carve/docling-carve/compare/0.1.1...0.1.2
+
 ## [0.1.1] - 2026-10-25
 
 Docling exports now preserve more table and text detail with the Carve 0.1.13 native writer.
