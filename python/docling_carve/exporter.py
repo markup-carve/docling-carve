@@ -167,7 +167,13 @@ def export_docling(
             )
         if not normalized:
             return []
-        nodes = [{"type": "text", "value": normalized}]
+        # AST 2.0 text holds no line break; a break between lines is a soft_break node.
+        nodes: List[Dict[str, Any]] = []
+        for index, line in enumerate(normalized.split("\n")):
+            if index:
+                nodes.append({"type": "soft_break"})
+            if line:
+                nodes.append({"type": "text", "value": line})
         formatting = getattr(item, "formatting", None)
         if formatting:
             mapping = [
@@ -189,11 +195,31 @@ def export_docling(
             nodes = [{"type": "link", "href": str(link), "children": nodes}]
         return nodes
 
+    def trim_edge(nodes: List[Dict[str, Any]], end: int) -> None:
+        while nodes:
+            node = nodes[end]
+            if node["type"] == "text":
+                node["value"] = (
+                    node["value"].lstrip(" \t\n") if end == 0 else node["value"].rstrip("\n")
+                )
+                if node["value"]:
+                    return
+            elif node["type"] == "soft_break":
+                pass
+            elif "children" in node:
+                trim_edge(node["children"], end)
+                if node["children"]:
+                    return
+            else:
+                return
+            nodes.pop(end)
+
     def visible(nodes: List[Dict[str, Any]]) -> bool:
         return any(
             visible(node["children"])
             if "children" in node
-            else node["type"] != "text" or bool(node["value"].strip(" \t\n"))
+            else node["type"] not in ("text", "soft_break")
+            or bool(node.get("value", "").strip(" \t\n"))
             for node in nodes
         )
 
@@ -212,6 +238,13 @@ def export_docling(
                 )
             nodes.extend(text_nodes(caption, value))
         return nodes
+
+    def cell_content(value: str) -> List[Dict[str, Any]]:
+        text = [{"type": "text", "value": value}] if value else []
+        return [{"type": "cell_paragraph", "children": text}]
+
+    def caption_block(nodes: List[Dict[str, Any]]) -> Dict[str, Any]:
+        return {"type": "caption", "children": [{"type": "paragraph", "children": nodes}]}
 
     def table(item: Any, path: str) -> Optional[Dict[str, Any]]:
         provenance_start = len(provenance)
@@ -271,12 +304,21 @@ def export_docling(
             origin: Dict[str, Any] = {
                 "type": "table_cell",
                 "header": cell.column_header or cell.row_header,
-                "children": [{"type": "text", "value": value}],
+                "children": cell_content(value),
             }
-            if cell.row_span > 1:
+            # C2-B-172: no row joins below a cell that spans columns, so such a cell keeps its column span.
+            both_axes = cell.row_span > 1 and cell.col_span > 1
+            if cell.row_span > 1 and not both_axes:
                 origin["rowspan"] = cell.row_span
             if cell.col_span > 1:
                 origin["colspan"] = cell.col_span
+            if both_axes:
+                diagnostic(
+                    item,
+                    "cell-rowspan-dropped",
+                    "A cell spanning rows and columns keeps only its column span in native source.",
+                    cell_path,
+                )
             if cell.row_section:
                 diagnostic(
                     item,
@@ -298,6 +340,8 @@ def export_docling(
                     grid[r][c] = (
                         origin
                         if (r, c) == (r0, c0)
+                        else {"type": "table_cell", "header": False, "children": cell_content("")}
+                        if both_axes and r > r0
                         else {
                             "type": "table_cell",
                             "header": False,
@@ -327,10 +371,10 @@ def export_docling(
         rows = [
             {
                 "type": "table_row",
-                "cells": [
+                "children": [
                     cell
                     if cell is not None
-                    else {"type": "table_cell", "header": False, "children": []}
+                    else {"type": "table_cell", "header": False, "children": cell_content("")}
                     for cell in row
                 ],
             }
@@ -341,8 +385,12 @@ def export_docling(
             for index, row in enumerate(rows)
             if any(
                 cell.get("span")
-                or any(node.get("value", "").strip() for node in cell.get("children", []))
-                for cell in row["cells"]
+                or any(
+                    node.get("value", "").strip()
+                    for block in cell.get("children", [])
+                    for node in block.get("children", [])
+                )
+                for cell in row["children"]
             )
         ]
         if len(retained) != len(rows):
@@ -367,7 +415,44 @@ def export_docling(
             rows = [rows[index] for index in retained]
         if not rows:
             return {"type": "paragraph", "children": caption} if caption else None
-        return {"type": "table", "rows": rows, "caption": caption}
+        # AST 2.0 groups the leading all-header rows in a table_head and the rest in a table_body.
+        head = 0
+        while head < len(rows) and all(
+            cell["header"] or cell.get("span") for cell in rows[head]["children"]
+        ):
+            head += 1
+        # C2-B-174: no span crosses from the head into the body.
+        while head and any(
+            index + cell.get("rowspan", 1) > head
+            for index in range(head)
+            for cell in rows[index]["children"]
+        ):
+            head -= 1
+        groups = []
+        if head:
+            groups.append({"type": "table_head", "children": rows[:head]})
+        if head < len(rows):
+            groups.append({"type": "table_body", "children": rows[head:]})
+        for entry in provenance[provenance_start:] + diagnostics[table_diagnostic_start:]:
+            entry_path = entry.get("path")
+            if entry_path and entry_path.startswith(path + "/rows/"):
+                row, _, column = entry_path[len(path + "/rows/") :].partition("/cells/")
+                group, index = (
+                    (0, int(row)) if int(row) < head else (int(bool(head)), int(row) - head)
+                )
+                entry["path"] = path + "/children/%d/children/%d/children/%s" % (
+                    group,
+                    index,
+                    column,
+                )
+        node: Dict[str, Any] = {
+            "type": "table",
+            "columns": [{"type": "table_column"} for _ in range(nc)],
+            "children": groups,
+        }
+        if caption:
+            node["caption"] = caption_block(caption)
+        return node
 
     contexts: List[Dict[str, Any]] = []
     for item, depth in items:
@@ -388,9 +473,9 @@ def export_docling(
         )
         if managed_list_item:
             owner = contexts[-1]
-            item_path = owner["path"] + "/items/%d" % len(owner["node"]["items"])
+            item_path = owner["path"] + "/children/%d" % len(owner["node"]["children"])
             list_item = {"type": "list_item", "children": []}
-            owner["node"]["items"].append(list_item)
+            owner["node"]["children"].append(list_item)
             contexts.append(
                 {
                     "kind": "item",
@@ -402,12 +487,8 @@ def export_docling(
             destination = list_item["children"]
             destination_path = item_path + "/children"
             marker = re.match(r"^(\d+)[.)]?$", item.marker or "")
-            expected = owner["start"] + len(owner["node"]["items"]) - 1
-            if (
-                item.enumerated != owner["node"]["ordered"]
-                or marker
-                and int(marker.group(1)) != expected
-            ):
+            expected = owner["start"] + len(owner["node"]["children"]) - 1
+            if item.enumerated != owner["ordered"] or marker and int(marker.group(1)) != expected:
                 diagnostic(
                     item,
                     "list-numbering-normalized",
@@ -429,9 +510,12 @@ def export_docling(
                 marker = re.match(r"^(\d+)[.)]?$", children[0].marker or "")
                 start = int(marker.group(1)) if ordered and marker else 1
                 list_path = destination_path + "/%d" % len(destination)
-                node = {"type": "list", "ordered": ordered, "tight": True, "items": []}
-                if ordered and start != 1:
-                    node["start"] = start
+                marker_field: Dict[str, Any] = (
+                    {"kind": "ordered", "style": "1", "delimiter": ".", "start": start}
+                    if ordered
+                    else {"kind": "bullet", "char": "-"}
+                )
+                node = {"type": "list", "marker": marker_field, "spacing": "tight", "children": []}
                 destination.append(node)
                 contexts.append(
                     {
@@ -440,6 +524,7 @@ def export_docling(
                         "path": list_path,
                         "node": node,
                         "start": start,
+                        "ordered": ordered,
                     }
                 )
                 provenance.append(
@@ -552,11 +637,9 @@ def export_docling(
                     "src": asset_prefix.rstrip("/") + "/" + name if asset_prefix else name,
                     "alt": alt,
                 }
-                block = (
-                    {"type": "figure", "target": target, "caption": caption}
-                    if caption
-                    else {"type": "paragraph", "children": [target]}
-                )
+                block = {"type": "paragraph", "role": "image", "children": [target]}
+                if caption:
+                    block["caption"] = caption_block(caption)
         elif isinstance(item, TextItem):
             label = item.label.value
             if label in ("title", "section_header"):
@@ -590,17 +673,19 @@ def export_docling(
                     "children": text_nodes(item, heading_text) if heading_text.strip() else [],
                 }
             elif label == "code":
-                block = {
-                    "type": "code_block",
-                    "content": item.text,
-                    "lang": str(
-                        getattr(getattr(item, "code_language", None), "value", "") or ""
-                    ).lower(),
-                }
-                if block["lang"] == "unknown":
-                    block["lang"] = ""
+                # C2-A-045: the value holds the final line break.
+                value = re.sub(r"\r\n?", "\n", item.text)
+                value = value if not value or value.endswith("\n") else value + "\n"
+                block = {"type": "code_block", "value": value}
+                syntax = str(
+                    getattr(getattr(item, "code_language", None), "value", "") or ""
+                ).lower()
+                if syntax and syntax != "unknown":
+                    block["syntax"] = syntax
                 if isinstance(item, CodeItem) and item.captions:
-                    block = {"type": "figure", "target": block, "caption": caption_nodes(item)}
+                    caption = caption_nodes(item)
+                    if caption:
+                        block["caption"] = caption_block(caption)
             elif label == "formula" and not item.text.strip():
                 diagnostic(
                     item,
@@ -610,7 +695,8 @@ def export_docling(
             elif label == "formula":
                 block = {
                     "type": "paragraph",
-                    "children": [{"type": "math", "display": True, "content": item.text}],
+                    "role": "math",
+                    "children": [{"type": "math", "display": True, "value": item.text}],
                 }
             else:
                 block = {"type": "paragraph", "children": text_nodes(item)}
@@ -625,12 +711,9 @@ def export_docling(
                 "Unsupported item %s; inspect its source reference." % type(item).__name__,
             )
         if block is not None and block.get("type") == "paragraph":
-            children = block["children"]
-            if children and children[0]["type"] == "text":
-                # A paragraph line cannot start with whitespace in Carve.
-                children[0]["value"] = children[0]["value"].lstrip(" \t\n")
-                if not children[0]["value"]:
-                    children.pop(0)
+            # A paragraph line cannot start with whitespace, and a paragraph cannot start or end with a soft break.
+            trim_edge(block["children"], 0)
+            trim_edge(block["children"], -1)
         if (
             block is not None
             and block.get("type") in ("paragraph", "heading")
@@ -673,7 +756,7 @@ def export_docling(
                     path if block else None,
                 )
 
-    ast = {"type": "document", "children": blocks, "srcByteLength": 0}
+    ast = {"type": "document", "astVersion": "2.0", "children": blocks}
     value = render_ast_json(json.dumps(ast, ensure_ascii=False))
     result = DoclingExport(
         value=value,
