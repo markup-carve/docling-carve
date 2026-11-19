@@ -47,8 +47,8 @@ class CarveDocSerializer(BaseDocSerializer):
         node = {"type": kind, "children": [{"type": "text", "value": text}], **fields}
         ast = {
             "type": "document",
+            "astVersion": "2.0",
             "children": [{"type": "paragraph", "children": [node]}],
-            "srcByteLength": 0,
         }
         return render_ast_json(json.dumps(ast)).rstrip("\n")
 

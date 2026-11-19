@@ -16,9 +16,11 @@ def test_lists_preserve_nesting_order_start_and_provenance():
     html = _native.to_html(result.value)
     assert '<ol start="3">' in html and "<ul>" in html
     assert "nested" in html and "two" in html
-    assert result.ast["children"][0]["items"][0]["children"][1]["type"] == "list"
+    # AST 2.0 holds list items in `children` (C2-A-053), so their paths name `children`.
+    assert result.ast["children"][0]["children"][0]["children"][1]["type"] == "list"
+    assert result.ast["children"][0]["marker"]["start"] == 3
     paths = {p["path"] for p in result.provenance}
-    assert "/children/0/items/0/children/1/items/0" in paths
+    assert "/children/0/children/0/children/1/children/0" in paths
     assert _native.to_carve(result.value) == result.value
 
 

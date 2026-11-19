@@ -24,6 +24,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
 
 [[package]]
+name = "bumpalo"
+version = "3.20.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87a0cf66fd1eb2fb7b822cb78370d82303750809bc6ba855f3f58e517d3238db"
+
+[[package]]
 name = "carve-lang"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -41,6 +47,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "carve-lang"
+version = "0.1.14"
+source = "git+https://github.com/markup-carve/carve-rs?rev=7fb7c24956298e78bc4716ff7e0e1fb96e60ecdf#7fb7c24956298e78bc4716ff7e0e1fb96e60ecdf"
+dependencies = [
+ "bumpalo",
+ "carve-lang 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "html5ever",
+ "markup5ever_rcdom",
+ "regex",
+ "serde",
+ "serde_json",
+ "typed-arena",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -50,7 +72,7 @@ checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 name = "docling-carve-native"
 version = "0.1.2"
 dependencies = [
- "carve-lang",
+ "carve-lang 0.1.14 (git+https://github.com/markup-carve/carve-rs?rev=7fb7c24956298e78bc4716ff7e0e1fb96e60ecdf)",
  "pyo3",
 ]
 
@@ -505,6 +527,12 @@ name = "tinyvec"
 version = "1.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
+
+[[package]]
+name = "typed-arena"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
 
 [[package]]
 name = "unicase"
