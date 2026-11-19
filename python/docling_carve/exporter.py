@@ -195,6 +195,25 @@ def export_docling(
             nodes = [{"type": "link", "href": str(link), "children": nodes}]
         return nodes
 
+    def trim_edge(nodes: List[Dict[str, Any]], end: int) -> None:
+        while nodes:
+            node = nodes[end]
+            if node["type"] == "text":
+                node["value"] = (
+                    node["value"].lstrip(" \t\n") if end == 0 else node["value"].rstrip("\n")
+                )
+                if node["value"]:
+                    return
+            elif node["type"] == "soft_break":
+                pass
+            elif "children" in node:
+                trim_edge(node["children"], end)
+                if node["children"]:
+                    return
+            else:
+                return
+            nodes.pop(end)
+
     def visible(nodes: List[Dict[str, Any]]) -> bool:
         return any(
             visible(node["children"])
@@ -655,7 +674,8 @@ def export_docling(
                 }
             elif label == "code":
                 # C2-A-045: the value holds the final line break.
-                value = item.text if not item.text or item.text.endswith("\n") else item.text + "\n"
+                value = re.sub(r"\r\n?", "\n", item.text)
+                value = value if not value or value.endswith("\n") else value + "\n"
                 block = {"type": "code_block", "value": value}
                 syntax = str(
                     getattr(getattr(item, "code_language", None), "value", "") or ""
@@ -691,12 +711,9 @@ def export_docling(
                 "Unsupported item %s; inspect its source reference." % type(item).__name__,
             )
         if block is not None and block.get("type") == "paragraph":
-            children = block["children"]
-            if children and children[0]["type"] == "text":
-                # A paragraph line cannot start with whitespace in Carve.
-                children[0]["value"] = children[0]["value"].lstrip(" \t\n")
-                if not children[0]["value"]:
-                    children.pop(0)
+            # A paragraph line cannot start with whitespace, and a paragraph cannot start or end with a soft break.
+            trim_edge(block["children"], 0)
+            trim_edge(block["children"], -1)
         if (
             block is not None
             and block.get("type") in ("paragraph", "heading")

@@ -387,3 +387,16 @@ def test_native_calls_use_the_carve_0_2_engine():
     assert carve.to_carve("-   a\n") == "- a\n"
     assert carve.to_html("Hi *there*") == "<p>Hi <strong>there</strong></p>"
     assert carve.render_ast_json(json.dumps(tree)) == "= Title\n\n- a\n"
+
+
+@pytest.mark.parametrize("text", ["\nhello", "hello\n", "\n\nhello\n"])
+def test_edge_line_breaks_do_not_become_edge_soft_breaks(text):
+    doc = DoclingDocument(name="edges")
+    doc.add_text(label=DocItemLabel.TEXT, text=text)
+    assert export_docling(doc).value == "hello\n"
+
+
+def test_code_line_endings_become_line_feeds():
+    doc = DoclingDocument(name="code endings")
+    doc.add_code("x\r\ny\r")
+    assert export_docling(doc).value == "```\nx\ny\n```\n"
