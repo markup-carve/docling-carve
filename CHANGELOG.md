@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Breaking
+
+- Port to Carve 0.2: the native writer is carve-rs `next2` (a Cargo `git` dependency pinned by commit), `ENGINE_VERSION` is `0.2`, and `result.ast` and `--format ast-json` are AST 2.0 trees. Provenance and diagnostic paths follow the 2.0 tree: list items are `/children/N`, table cells `/children/G/children/R/children/C`.
+- Code, table and image captions are captions of the code block, table or image paragraph instead of a 0.1 `figure` node; the rendered HTML keeps its `<figure>` and `<figcaption>`.
+
 ## [0.1.2] - 2026-11-12
 
 Docling exports are written by the Carve 0.1.14 native writer, and whitespace Carve cannot spell no longer breaks the output.

@@ -129,16 +129,21 @@ def test_overlap_and_resource_limits_are_refused():
 
 
 def test_native_ast_writer_refuses_invalid_or_unspellable_trees():
+    # The root of an AST 2.0 tree carries astVersion "2.0" (C2-A-008).
     with pytest.raises(ValueError):
-        carve.render_ast_json('{"type":"document","children":[{"type":"bogus"}],"srcByteLength":0}')
+        carve.render_ast_json(
+            '{"type":"document","astVersion":"2.0","children":[{"type":"bogus"}]}'
+        )
+    with pytest.raises(ValueError):
+        carve.render_ast_json('{"type":"document","children":[]}')
     assert carve.render_ast_json(
         json.dumps(
             {
                 "type": "document",
+                "astVersion": "2.0",
                 "children": [
                     {"type": "paragraph", "children": [{"type": "text", "value": "*text*"}]}
                 ],
-                "srcByteLength": 0,
             }
         )
     ).startswith("\\*")
@@ -162,7 +167,8 @@ def test_formatting_and_links_use_the_native_ast_writer():
     assert 'href="https://example.com/"' in html
 
 
-def test_a_cell_spanning_both_axes_preserves_its_geometry():
+def test_a_cell_spanning_both_axes_keeps_its_column_span():
+    # C2-B-172: Carve 0.2 joins no row below a cell that spans columns, so the row span is reported and dropped.
     doc = DoclingDocument(name="rectangle")
     doc.add_table(
         data=TableData(
@@ -175,8 +181,11 @@ def test_a_cell_spanning_both_axes_preserves_its_geometry():
             ],
         )
     )
-    html = carve.to_html(export_docling(doc, strict=True).value)
-    assert 'rowspan="2"' in html and 'colspan="2"' in html
+    result = export_docling(doc)
+    html = carve.to_html(result.value)
+    assert 'colspan="2"' in html and 'rowspan="2"' not in html
+    assert [d["code"] for d in result.diagnostics] == ["cell-rowspan-dropped"]
+    assert result.diagnostics[0]["path"] == "/children/0/children/0/children/0/children/0"
     assert html.count("merged") == 1
     assert "right top" in html and "right bottom" in html
 
@@ -368,3 +377,26 @@ def test_caption_alt_and_carriage_return_blank_lines_are_reported():
     assert len(carve.parse(result.value)["children"]) == 2
     with pytest.raises(DoclingExportError):
         export_docling(doc, strict=True)
+
+
+def test_native_calls_use_the_carve_0_2_engine():
+    assert carve.ENGINE_VERSION == "0.2"
+    tree = carve.parse("= Title\n\n-   a\n")
+    assert tree["astVersion"] == "2.0"
+    assert [node["type"] for node in tree["children"]] == ["heading", "list"]
+    assert carve.to_carve("-   a\n") == "- a\n"
+    assert carve.to_html("Hi *there*") == "<p>Hi <strong>there</strong></p>"
+    assert carve.render_ast_json(json.dumps(tree)) == "= Title\n\n- a\n"
+
+
+@pytest.mark.parametrize("text", ["\nhello", "hello\n", "\n\nhello\n"])
+def test_edge_line_breaks_do_not_become_edge_soft_breaks(text):
+    doc = DoclingDocument(name="edges")
+    doc.add_text(label=DocItemLabel.TEXT, text=text)
+    assert export_docling(doc).value == "hello\n"
+
+
+def test_code_line_endings_become_line_feeds():
+    doc = DoclingDocument(name="code endings")
+    doc.add_code("x\r\ny\r")
+    assert export_docling(doc).value == "```\nx\ny\n```\n"
