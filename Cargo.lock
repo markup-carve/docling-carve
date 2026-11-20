@@ -49,7 +49,7 @@ dependencies = [
 [[package]]
 name = "carve-lang"
 version = "0.1.14"
-source = "git+https://github.com/markup-carve/carve-rs?rev=388348a0ffcc54e508a37af1a6952c01cb16e137#388348a0ffcc54e508a37af1a6952c01cb16e137"
+source = "git+https://github.com/markup-carve/carve-rs?rev=48f27d02368df9310c2b2a694076653106a8d0ea#48f27d02368df9310c2b2a694076653106a8d0ea"
 dependencies = [
  "bumpalo",
  "carve-lang 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -100,7 +100,7 @@ dependencies = [
 name = "docling-carve-native"
 version = "0.1.2"
 dependencies = [
- "carve-lang 0.1.14 (git+https://github.com/markup-carve/carve-rs?rev=388348a0ffcc54e508a37af1a6952c01cb16e137)",
+ "carve-lang 0.1.14 (git+https://github.com/markup-carve/carve-rs?rev=48f27d02368df9310c2b2a694076653106a8d0ea)",
  "pyo3",
 ]
 
