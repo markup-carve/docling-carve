@@ -6,7 +6,7 @@ The package owns its native wrapper over `carve-lang` at Carve 0.2 (the carve-rs
 
 ## Installation
 
-Until wheels are published, build from this repository with Rust and Python installed:
+Until wheels are published, build from this repository with Rust 1.88 or newer and Python installed:
 
 ```sh
 python -m venv .venv
