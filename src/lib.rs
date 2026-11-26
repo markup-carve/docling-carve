@@ -2,7 +2,7 @@ use carve::api::{self, Carve, Options, WriteOptions};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-// carve-rs next2 still carries the 0.1 crate version, so the Carve language version is stated here.
+// The pinned carve-rs commit still carries the 0.1 crate version, so the Carve language version is stated here.
 const ENGINE_VERSION: &str = "0.2";
 
 fn value_error(error: api::Error) -> PyErr {
