@@ -2,11 +2,11 @@
 
 Convert Docling documents to Carve with provenance, image assets, and diagnostics for content that needs review. Use the Python API, command line, HTTP, or MCP interface. All interfaces share the same exporter and report contract.
 
-The package owns its native wrapper over `carve-lang` 0.1.14. It does not require `carve-py` or an unreleased Python binding API. Python 3.10 or newer is required.
+The package owns its native wrapper over `carve-lang` at Carve 0.2 (the carve-rs `next2` branch, pinned by commit; unreleased). It does not require `carve-py` or an unreleased Python binding API. Python 3.10 or newer is required.
 
 ## Installation
 
-Until wheels are published, build from this repository with Rust and Python installed:
+Until wheels are published, build from this repository with Rust 1.88 or newer and Python installed:
 
 ```sh
 python -m venv .venv
