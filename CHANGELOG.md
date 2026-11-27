@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-27
+
 ### Breaking
 
 - Port to Carve 0.2: the native writer is carve-rs `next2` (a Cargo `git` dependency pinned by commit), `ENGINE_VERSION` is `0.2`, and `result.ast` and `--format ast-json` are AST 2.0 trees. Provenance and diagnostic paths follow the 2.0 tree: list items are `/children/N`, table cells `/children/G/children/R/children/C`.

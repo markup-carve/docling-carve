@@ -6,7 +6,13 @@ The package owns its native wrapper over `carve-lang` at Carve 0.2 (the carve-rs
 
 ## Installation
 
-Until wheels are published, build from this repository with Rust 1.88 or newer and Python installed:
+```sh
+pip install "docling-carve>=0.2,<0.3"
+```
+
+The core dependency is `docling-core`; the full extraction pipeline is optional. Extras are `extract`, `http`, and `mcp`. They can be combined, for example `docling-carve[http,extract]`.
+
+To build from this repository instead, use Rust 1.88 or newer:
 
 ```sh
 python -m venv .venv
@@ -14,8 +20,6 @@ python -m venv .venv
 pip install maturin
 maturin develop --release
 ```
-
-After publication, install `docling-carve`. The core dependency is `docling-core`; the full extraction pipeline is optional. Extras are `extract`, `http`, and `mcp`. They can be combined, for example `docling-carve[http,extract]`.
 
 ## Python
 

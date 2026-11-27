@@ -98,7 +98,7 @@ dependencies = [
 
 [[package]]
 name = "docling-carve-native"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "carve-lang 0.1.14 (git+https://github.com/markup-carve/carve-rs?rev=284c05f30da3a00a0e7a1fd42fea9f5ce430d6dd)",
  "pyo3",
